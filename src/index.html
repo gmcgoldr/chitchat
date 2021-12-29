@@ -20,8 +20,24 @@
 
   <body>
     <div class="content read-width">
-      <h1>Heading</h1>
-      <p>Typography will look something like this.</p>
+      <h2>Address:</h2>
+      <p>
+        <span id="p2p_self_address" class="monospace"></span>
+      </p>
+      <h2>Dial:</h2>
+      <p class="grid-1">
+        <input
+          id="p2p_dial_address"
+          type="text"
+          class="monospace"
+          style="width: 100%"
+        />
+        <br />
+        <button id="p2p_dial_button" type="button">Dial</button>
+      </p>
+      <p>
+        <span id="p2p_ping"></span>
+      </p>
     </div>
 
     <script type="module" src="scripts/main.js"></script>

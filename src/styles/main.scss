@@ -40,3 +40,10 @@ a:visited {
 .monospace {
   font-family: "Inconsolata", monospace;
 }
+
+.grid-1 {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-auto-flow: column;
+  grid-column-gap: $spacing;
+}

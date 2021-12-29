@@ -3,11 +3,11 @@ import Websockets from "libp2p-websockets";
 import WebRTCStar from "libp2p-webrtc-star";
 import { NOISE } from "@chainsafe/libp2p-noise";
 import Mplex from "libp2p-mplex";
-import Bootstrap from "libp2p-bootstrap";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const libp2p = await Libp2p.create({
     addresses: {
+      // will automatically append peerId
       listen: [
         "/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star",
         "/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star",
@@ -17,43 +17,34 @@ document.addEventListener("DOMContentLoaded", async () => {
       transport: [Websockets, WebRTCStar],
       connEncryption: [NOISE],
       streamMuxer: [Mplex],
-      peerDiscovery: [Bootstrap],
+      // handled in the WebRTCStar transport
+      peerDiscovery: [],
     },
     config: {
       peerDiscovery: {
-        [Bootstrap.tag]: {
+        autoDial: false,
+        webRTCStar: {
           enabled: true,
-          list: [
-            "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-            "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-            "/dnsaddr/bootstrap.libp2p.io/p2p/QmZa1sAxajnQjVM8WjWXoMbmPd7NsWhfKsPkErzpm9wGkp",
-            "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
-            "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
-          ],
         },
       },
     },
   });
 
-  function log(txt) {
-    console.info(txt);
-  }
-
-  // Listen for new peers
-  libp2p.on("peer:discovery", (peerId) => {
-    log(`Found peer ${peerId.toB58String()}`);
-  });
-
-  // Listen for new connections to peers
-  libp2p.connectionManager.on("peer:connect", (connection) => {
-    log(`Connected to ${connection.remotePeer.toB58String()}`);
-  });
-
-  // Listen for peers disconnecting
-  libp2p.connectionManager.on("peer:disconnect", (connection) => {
-    log(`Disconnected from ${connection.remotePeer.toB58String()}`);
-  });
-
   await libp2p.start();
-  log(`libp2p id is ${libp2p.peerId.toB58String()}`);
+
+  let address = `/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/p2p/${libp2p.peerId.toB58String()}`;
+  document.getElementById("p2p_self_address").innerText = address;
+
+  document
+    .getElementById("p2p_dial_button")
+    .addEventListener("click", async () => {
+      const dial_address = document.getElementById("p2p_dial_address").value;
+      let ping;
+      try {
+        ping = await libp2p.ping(dial_address);
+      } catch (err) {
+        ping = err.message;
+      }
+      document.getElementById("p2p_ping").innerText = `Ping: ${ping}`;
+    });
 });
