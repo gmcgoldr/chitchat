@@ -8,9 +8,14 @@ import WebRTCStar from "libp2p-webrtc-star";
 import { NOISE } from "@chainsafe/libp2p-noise";
 import Mplex from "libp2p-mplex";
 import Crypto from "libp2p-crypto";
+import PeerId from "peer-id";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const privateKey = await Crypto.keys.generateKeyPair("Ed25519", 256);
+  const peerId = await PeerId.createFromPrivKey(privateKey.bytes);
+
   const libp2p = await Libp2p.create({
+    peerId: peerId,
     addresses: {
       // will automatically append peerId
       listen: [
