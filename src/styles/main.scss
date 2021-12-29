@@ -1,0 +1,42 @@
+@import "colors", "dimensions", "modern-normalize";
+
+body {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 400;
+  color: $color_ink;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Inter", sans-serif;
+  font-weight: 300;
+}
+
+a,
+a:visited {
+  text-decoration: none;
+  font-weight: 500;
+  color: $color-purple;
+}
+
+.content {
+  max-width: $size-large;
+  margin: 0 auto;
+  padding: $spacing #{2 * $spacing};
+
+  &.read-width {
+    max-width: $size-medium;
+  }
+}
+
+.center {
+  text-align: center;
+}
+
+.monospace {
+  font-family: "Inconsolata", monospace;
+}

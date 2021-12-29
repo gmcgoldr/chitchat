@@ -1,0 +1,28 @@
+{
+  "name": "web-start",
+  "version": "0.1.0",
+  "license": "MIT",
+  "browser": true,
+  "private": true,
+  "scripts": {
+    "clean": "prettier -w {cfg,test,src,static}/**/*.{js,scss,css,html}",
+    "serve": "parcel build",
+    "start": "parcel"
+  },
+  "devDependencies": {
+    "@parcel/transformer-sass": "^2.0.1",
+    "parcel": "^2.0.1",
+    "prettier": "^2.5.1"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-noise": "^5.0.0",
+    "libp2p": "^0.35.7",
+    "libp2p-bootstrap": "^0.14.0",
+    "libp2p-mplex": "^0.10.5",
+    "libp2p-webrtc-star": "^0.25.0",
+    "libp2p-websockets": "^0.16.2",
+    "lodash-es": "^4.17.21",
+    "peer-id": "^0.16.0"
+  },
+  "source": "src/index.html"
+}
