@@ -37,3 +37,6 @@ npm install --global yarn
   - <https://docs.libp2p.io/concepts/publish-subscribe/>
   - <https://github.com/libp2p/js-libp2p-interfaces/tree/master/packages/libp2p-pubsub/src>
   - <https://github.com/ChainSafe/js-libp2p-gossipsub>
+
+Chat app: <https://github.com/libp2p/js-libp2p-examples/tree/master/chat/browser>
+<https://dev.to/suda/spinning-up-a-free-ipfs-webrtc-star-discovery-server-with-heroku-284p>
