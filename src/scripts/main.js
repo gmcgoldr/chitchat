@@ -10,6 +10,8 @@ import Mplex from "libp2p-mplex";
 import Crypto from "libp2p-crypto";
 import PeerId from "peer-id";
 
+localStorage.debug = ""; // change to libp2p:* for all libp2p debug
+
 document.addEventListener("DOMContentLoaded", async () => {
   const privateKey = await Crypto.keys.generateKeyPair("Ed25519", 256);
   const peerId = await PeerId.createFromPrivKey(privateKey.bytes);
