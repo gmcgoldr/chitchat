@@ -1,6 +1,7 @@
 import { pipe } from "it-pipe";
 import { toBuffer } from "it-buffer";
-const { collect, take } = require("streaming-iterables");
+import { collect, consume, take } from "streaming-iterables";
+import lp from "it-length-prefixed";
 
 import Libp2p from "libp2p";
 import Websockets from "libp2p-websockets";
@@ -42,14 +43,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
   });
 
+  libp2p.handle(
+    "/chitchat/activitypub/inbox/0.1.0/push",
+    async ({ stream }) => {
+      let data;
+      const [result] = await pipe(
+        [],
+        stream,
+        lp.decode(),
+        take(1),
+        toBuffer,
+        collect
+      );
+      console.log(result);
+      data = new TextDecoder().decode(result);
+      document.getElementById("p2p_message_get").innerText = data;
+    }
+  );
+
   await libp2p.start();
 
   let address = `/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/p2p/${libp2p.peerId.toB58String()}`;
   document.getElementById("p2p_self_address").innerText = address;
-
-  // TODO:
-  // - filter connections to known peers
-  // - lookup peer in peer book
 
   document
     .getElementById("p2p_dial_button")
@@ -63,29 +78,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         ping = err.message;
       }
       document.getElementById("p2p_ping").innerText = `Ping: ${ping}`;
+    });
 
-      const protocol = "/ipfs/ping/1.0.0";
+  document
+    .getElementById("p2p_send_button")
+    .addEventListener("click", async () => {
+      const peer = document.getElementById("p2p_dial_address").value;
+
+      const protocol = "/chitchat/activitypub/inbox/0.1.0/push";
       const connection = await libp2p.dial(peer);
       const { stream } = await connection.newStream(protocol);
 
-      const data = Crypto.randomBytes(32);
+      let data = new TextEncoder().encode(
+        document.getElementById("p2p_message_push").value
+      );
 
-      let data_back;
+      console.log(data);
       try {
-        const [result] = await pipe(
-          [data],
-          stream,
-          (stream) => take(1, stream),
-          toBuffer,
-          collect
-        );
-        data_back = new Uint8Array(result);
+        await pipe([data], lp.encode(), stream, consume);
       } catch (err) {
-        data_back = err.message;
+        console.log(err);
       }
-
-      document.getElementById(
-        "p2p_ping"
-      ).innerText += `\nData:\n${data}\n${data_back}`;
     });
 });
