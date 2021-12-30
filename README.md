@@ -39,4 +39,3 @@ npm install --global yarn
   - <https://github.com/ChainSafe/js-libp2p-gossipsub>
 
 Chat app: <https://github.com/libp2p/js-libp2p-examples/tree/master/chat/browser>
-<https://dev.to/suda/spinning-up-a-free-ipfs-webrtc-star-discovery-server-with-heroku-284p>

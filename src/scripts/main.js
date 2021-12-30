@@ -22,8 +22,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     addresses: {
       // will automatically append peerId
       listen: [
-        "/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star",
-        "/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star",
+        // "/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star",
+        // "/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star",
+        "/dns4/chitchat-relay.herokuapp.com/tcp/443/wss/p2p-webrtc-star/",
       ],
     },
     modules: {
@@ -63,7 +64,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await libp2p.start();
 
-  let address = `/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/p2p/${libp2p.peerId.toB58String()}`;
+
+  // let address = `/dns4/wrtc-star2.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/p2p/${libp2p.peerId.toB58String()}`;
+  let address = `/dns4/chitchat-relay.herokuapp.com/tcp/443/wss/p2p-webrtc-star/p2p/${libp2p.peerId.toB58String()}`;
   document.getElementById("p2p_self_address").innerText = address;
 
   document
