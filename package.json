@@ -32,7 +32,8 @@
     "peer-id": "^0.16.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "streaming-iterables": "^6.0.0"
+    "streaming-iterables": "^6.0.0",
+    "uint8arrays": "^3.0.0"
   },
   "source": "src/index.html"
 }

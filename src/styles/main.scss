@@ -17,6 +17,10 @@ h6 {
   font-weight: 300;
 }
 
+.btn {
+  box-shadow: $box-shadow-sm;
+}
+
 .btn-blue-to-pink {
   background-image: linear-gradient(to right, $blue, $pink);
   color: $white;

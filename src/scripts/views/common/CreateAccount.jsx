@@ -1,14 +1,4 @@
-import React, { useState, useEffect } from "react";
-
-export function CreateAccount(eventBus) {
-  const storage = window.sessionStorage;
-  const [name, setName] = useState(() => {
-    const name = storage.getItem("name");
-    return name === null ? "" : name;
-  });
-
-  useEffect(() => {});
-
+export function CreateAccount({ name, setName, createAccount }) {
   return (
     <section>
       <div className="container mw-md">
@@ -26,7 +16,9 @@ export function CreateAccount(eventBus) {
                 type="name"
                 className="form-control"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                }}
                 aria-describedby="newAccountNameHelp"
               />
             </div>
@@ -38,7 +30,7 @@ export function CreateAccount(eventBus) {
             id="newAccountSubmit"
             type="button"
             className="btn btn-primary"
-            onClick={storage.setItem("name", name)}
+            onClick={createAccount}
           >
             Create account
           </button>

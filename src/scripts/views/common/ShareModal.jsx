@@ -13,7 +13,7 @@ export function ShareModal() {
     <section>
       <button
         type="button"
-        className="btn btn-blue-to-pink shadow-sm"
+        className="btn btn-blue-to-pink"
         data-bs-toggle="modal"
         data-bs-target="#shareModal"
         data-bs-placement="top"

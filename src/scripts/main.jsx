@@ -2,8 +2,8 @@ import "bootstrap/js/dist/modal";
 
 import React from "react";
 import ReactDOM from "react-dom";
-import { App } from "./views/App";
+import { Home } from "./views/Home";
 
 localStorage.debug = ""; // change to libp2p:* for all libp2p debug
 
-ReactDOM.render(<App />, document.getElementById("root"));
+ReactDOM.render(<Home />, document.getElementById("root-home"));
