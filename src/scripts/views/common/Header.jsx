@@ -2,7 +2,7 @@ import { ShareModal } from "./ShareModal";
 
 import logo from "../../../svg/logo-solid-color.svg";
 
-export function Header({ name, isAccount }) {
+export function Header({ name, hasAccount }) {
   return (
     <header className="mb-3 border-bottom">
       <div className="container mw-lg">
@@ -24,11 +24,15 @@ export function Header({ name, isAccount }) {
           <div className="ms-auto">
             <ShareModal />
           </div>
-          {isAccount ? (
-            <a href="#" className="ms-3 btn btn-primary">
+          {hasAccount ? (
+            <a href="#" className="ms-2 btn btn-primary">
               @{name}
             </a>
-          ) : null}
+          ) : (
+            <a href="#" className="ms-2 btn btn-primary">
+              Login
+            </a>
+          )}
         </nav>
       </div>
     </header>
