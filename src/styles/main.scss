@@ -1,49 +1,40 @@
-@import "colors", "dimensions", "modern-normalize";
+@import "colors";
+$min-contrast-ratio: 3;
+$btn-border-width: 0;
+$btn-border-radius: 50rem;
 
-body {
-  font-family: "DM Sans", sans-serif;
-  font-weight: 400;
-  color: $color_ink;
-}
+@import "../../node_modules/bootstrap/scss/bootstrap";
+@import "../../node_modules/bootstrap-icons/font/bootstrap-icons.css";
 
+.font-heading,
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family: "Inter", sans-serif;
+  font-family: "Inter", $font-family-sans-serif;
   font-weight: 300;
 }
 
-a,
-a:visited {
-  text-decoration: none;
-  font-weight: 500;
-  color: $color-purple;
-}
-
-.content {
-  max-width: $size-large;
-  margin: 0 auto;
-  padding: $spacing #{2 * $spacing};
-
-  &.read-width {
-    max-width: $size-medium;
+.btn-blue-to-pink {
+  background-image: linear-gradient(to right, $blue, $pink);
+  color: $white;
+  &:hover {
+    color: $white;
   }
 }
 
-.center {
-  text-align: center;
+.btn-purple-to-red {
+  background-image: linear-gradient(to right, $purple, $red);
+  color: $white;
+  &:hover {
+    color: $white;
+  }
 }
 
-.monospace {
-  font-family: "Inconsolata", monospace;
-}
-
-.grid-1 {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-auto-flow: column;
-  grid-column-gap: $spacing;
+@each $breakpoint, $container-max-width in $container-max-widths {
+  .mw-#{$breakpoint} {
+    max-width: $container-max-width;
+  }
 }

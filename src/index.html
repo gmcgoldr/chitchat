@@ -11,44 +11,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inconsolata&family=Inter:wght@300;400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap"
       rel="stylesheet"
     />
-
     <link rel="stylesheet" href="styles/main.scss" />
   </head>
 
   <body>
-    <div class="content read-width">
-      <h2>Address:</h2>
-      <p>
-        <span id="p2p_self_address" class="monospace"></span>
-      </p>
-      <h2>Dial:</h2>
-      <p class="grid-1">
-        <input
-          id="p2p_dial_address"
-          type="text"
-          class="monospace"
-          style="width: 100%"
-        />
-        <br />
-        <button id="p2p_dial_button" type="button">Dial</button>
-      </p>
-      <p>
-        <span id="p2p_ping"></span>
-      </p>
-      <h2>Push:</h2>
-      <p class="grid-1">
-        <input id="p2p_message_push" type="text" style="width: 100%" />
-        <br />
-        <button id="p2p_send_button" type="button">Send</button>
-      </p>
-      <p>
-        <span id="p2p_message_get"></span>
-      </p>
-    </div>
-
-    <script type="module" src="scripts/main.js"></script>
+    <div id="root"></div>
+    <script type="module" src="scripts/main.jsx"></script>
   </body>
 </html>
