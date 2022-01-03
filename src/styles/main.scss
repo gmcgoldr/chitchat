@@ -22,7 +22,7 @@ h6 {
 }
 
 .btn-blue-to-pink {
-  background-image: linear-gradient(to right, $blue, $pink);
+  background-image: linear-gradient(120deg, $blue, $pink);
   color: $white;
   &:hover {
     color: $white;
@@ -30,7 +30,7 @@ h6 {
 }
 
 .btn-purple-to-red {
-  background-image: linear-gradient(to right, $purple, $red);
+  background-image: linear-gradient(120deg, $purple, $red);
   color: $white;
   &:hover {
     color: $white;

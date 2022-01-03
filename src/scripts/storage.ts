@@ -1,44 +1,56 @@
 import { IDBPDatabase, openDB } from "idb";
 import PeerId from "peer-id";
 
+const stores = {
+  ownedPeerIds: "ownedPeerIds",
+  credentials: "credentials",
+  state: "state",
+};
+
 export class Storage {
   db: IDBPDatabase;
 
   async init(): Promise<void> {
     this.db = await openDB("chitChat", 2, {
       upgrade: (db) => {
-        if (!db.objectStoreNames.contains("peerIds")) {
-          const store = db.createObjectStore("peerIds");
-        }
-
-        if (!db.objectStoreNames.contains("state")) {
-          const store = db.createObjectStore("state");
+        for (const store in stores) {
+          if (!db.objectStoreNames.contains(store)) db.createObjectStore(store);
         }
       },
     });
   }
 
-  async getPeerId(): Promise<PeerId> {
-    const peerId = await this.db.get("state", "peerId");
+  async getStatePeerId(): Promise<PeerId> {
+    if (this.db === undefined) return undefined;
+    const peerId = await this.db.get(stores.state, "peerId");
     if (!peerId) return undefined;
     return PeerId.createFromProtobuf(peerId);
   }
 
-  async setPeerId(peerId: PeerId): Promise<void> {
-    await this.db.put("state", peerId.marshal(), "peerId");
+  async setStatePeerId(peerId: PeerId): Promise<void> {
+    await this.db.put(
+      stores.state,
+      peerId ? peerId.marshal() : undefined,
+      "peerId"
+    );
   }
 
-  async addPeerId(peerId: PeerId): Promise<void> {
-    await this.db.add("peerIds", peerId.marshal(), peerId.toB58String());
+  async addOwnedPeerId(peerId: PeerId): Promise<void> {
+    await this.db.add(
+      stores.ownedPeerIds,
+      peerId ? peerId.marshal() : undefined,
+      peerId.toB58String()
+    );
   }
 
-  async getName(): Promise<String> {
-    const name = await this.db.get("state", "name");
-    if (name === undefined) return "";
-    else return name;
+  async getOwnedPeerId(key: string): Promise<PeerId> {
+    if (this.db === undefined) return undefined;
+    const peerId = await this.db.get(stores.ownedPeerIds, key);
+    return PeerId.createFromProtobuf(peerId);
   }
 
-  async setName(name: String): Promise<void> {
-    await this.db.put("state", name, "name");
+  async getOwnedPeerIdKeys() {
+    if (this.db === undefined) return undefined;
+    return this.db.getAllKeys(stores.ownedPeerIds);
   }
 }

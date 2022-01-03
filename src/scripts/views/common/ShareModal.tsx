@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 
 export function ShareModal() {
-  const [isCopied, setIsCopied] = useState(false);
+  const [isCopied, setIsCopied]: [boolean, any] = useState(false);
 
-  const link = "localhost:1234/follow";
+  const link = "follow";
   function setClipboardToLink() {
     setIsCopied(true);
     navigator.clipboard.writeText(link);
@@ -23,7 +23,7 @@ export function ShareModal() {
       <div
         className="modal fade"
         id="shareModal"
-        tabIndex="-1"
+        tabIndex={-1}
         aria-labelledby="shareInviteLabel"
         aria-hidden="true"
       >
