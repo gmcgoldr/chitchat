@@ -11,7 +11,7 @@ export function Home() {
   const [store, setStore]: [Storage, any] = useState(new Storage());
   const [libp2p, setLibp2p]: [Libp2p, any] = useState(undefined);
   const [peerId, setPeerId]: [PeerId, any] = useState(undefined);
-  const [name, setName]: [String, any] = useState("");
+  const [displayName, setDisplayName]: [string, any] = useState("");
 
   useEffect(async () => {
     await store.init();
@@ -27,6 +27,7 @@ export function Home() {
     setPeerId(peerId);
     await store.addOwnedPeerId(peerId);
     await store.setStatePeerId(peerId);
+    // TODO: display name
   }
 
   async function logOut() {
@@ -38,12 +39,13 @@ export function Home() {
     const peerId = await store.getOwnedPeerId(key);
     setPeerId(peerId);
     await store.setStatePeerId(peerId);
+    // TODO: display name
   }
 
   return (
     <div>
       <Header
-        name={name}
+        name={displayName}
         loggedIn={!!peerId}
         logout={logOut}
         selectAccount={selectAccount}
@@ -51,8 +53,8 @@ export function Home() {
       />
       {peerId ? null : (
         <CreateAccount
-          name={name}
-          setName={setName}
+          name={displayName}
+          setName={setDisplayName}
           createAccount={createAccount}
         />
       )}

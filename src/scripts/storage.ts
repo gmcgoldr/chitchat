@@ -13,8 +13,18 @@ export class Storage {
   async init(): Promise<void> {
     this.db = await openDB("chitChat", 2, {
       upgrade: (db) => {
-        for (const store in stores) {
-          if (!db.objectStoreNames.contains(store)) db.createObjectStore(store);
+        if (!db.objectStoreNames.contains(stores.ownedPeerIds)) {
+          db.createObjectStore(stores.ownedPeerIds);
+        }
+
+        // https://www.w3.org/TR/vc-data-model/
+
+        if (!db.objectStoreNames.contains(stores.credentials)) {
+          const store = db.createObjectStore(stores.credentials, {
+            keyPath: "id",
+          });
+          store.createIndex("subject", ["credentialSubject", "id"]);
+          store.createIndex("issuer", "issuer");
         }
       },
     });
@@ -53,4 +63,6 @@ export class Storage {
     if (this.db === undefined) return undefined;
     return this.db.getAllKeys(stores.ownedPeerIds);
   }
+
+  // TODO: display name per peer id
 }
