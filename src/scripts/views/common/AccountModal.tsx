@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 
-function AccountSelector({ peerIdKey, selectAccount }) {
-  function displayName() {
-    const n = peerIdKey.length;
-    return `${peerIdKey.substring(0, 8)} ... ${peerIdKey.substring(n - 8, n)}`;
-  }
+function AccountSelector({ store, peerIdKey, selectAccount }) {
+  const [displayName, setDisplayName] = useState(null);
+
+  // TODO: add key suffix to disambiguate
+
+  useEffect(async () => {
+    const info = await store.getPeerIdInfo(peerIdKey);
+    setDisplayName(
+      info && info.displayName ? info.displayName : peerIdKey.substring(0, 32)
+    );
+  }, [peerIdKey]);
 
   return (
     <a
@@ -12,7 +18,7 @@ function AccountSelector({ peerIdKey, selectAccount }) {
       className="list-group-item list-group-item-action"
       onClick={() => selectAccount(peerIdKey)}
     >
-      {displayName()}
+      {displayName}
     </a>
   );
 }
@@ -31,10 +37,11 @@ function AccountModalOutBody({ store, selectAccount, count }) {
         <div>
           <p>Log into account:</p>
           <div className="list-group">
-            {accounts.map((key) => (
+            {accounts.map((k) => (
               <AccountSelector
-                key={key}
-                peerIdKey={key}
+                key={k}
+                store={store}
+                peerIdKey={k}
                 selectAccount={selectAccount}
               />
             ))}
@@ -57,8 +64,10 @@ function AccountModalInBody({ name, logout }) {
       </div>
       <div className="grid m-2">
         <div className="row">
-          <div className="col-3 bg-secondary text-white rounded">Name</div>
-          <div className="col-9">{name}</div>
+          <div className="col-4 bg-secondary text-white rounded">
+            Display name
+          </div>
+          <div className="col-8">{name}</div>
         </div>
       </div>
     </section>

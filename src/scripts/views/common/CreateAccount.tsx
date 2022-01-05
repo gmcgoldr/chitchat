@@ -1,4 +1,4 @@
-export function CreateAccount({ name, setName, createAccount }) {
+export function CreateAccount({ displayName, setDisplayName, createAccount }) {
   return (
     <section>
       <div className="container mw-md">
@@ -11,13 +11,13 @@ export function CreateAccount({ name, setName, createAccount }) {
         <form>
           <div className="mb-3">
             <div className="input-group">
-              <span className="input-group-text">Name</span>
+              <span className="input-group-text">Display name</span>
               <input
                 type="name"
                 className="form-control"
-                value={name}
+                value={displayName}
                 onChange={(e) => {
-                  setName(e.target.value);
+                  setDisplayName(e.target.value);
                 }}
                 aria-describedby="newAccountNameHelp"
               />

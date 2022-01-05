@@ -6,6 +6,7 @@ import { buildNode, buildPeerId } from "../p2p";
 import { Storage } from "../storage";
 import Libp2p from "libp2p";
 import PeerId from "peer-id";
+import { buildVerifiableCredential } from "../credentialutils";
 
 export function Home() {
   const [store, setStore]: [Storage, any] = useState(new Storage());
@@ -27,7 +28,12 @@ export function Home() {
     setPeerId(peerId);
     await store.addOwnedPeerId(peerId);
     await store.setStatePeerId(peerId);
-    // TODO: display name
+    const displayNameCred = await buildVerifiableCredential(
+      peerId,
+      "https://schema.org/alternateName",
+      [{ "@value": displayName }]
+    );
+    store.addCredential(displayNameCred);
   }
 
   async function logOut() {
@@ -39,7 +45,8 @@ export function Home() {
     const peerId = await store.getOwnedPeerId(key);
     setPeerId(peerId);
     await store.setStatePeerId(peerId);
-    // TODO: display name
+    const info = await store.getPeerIdInfo(peerId.toB58String());
+    setDisplayName(info.displayName ? info.displayName : "");
   }
 
   return (
@@ -53,8 +60,8 @@ export function Home() {
       />
       {peerId ? null : (
         <CreateAccount
-          name={displayName}
-          setName={setDisplayName}
+          displayName={displayName}
+          setDisplayName={setDisplayName}
           createAccount={createAccount}
         />
       )}
