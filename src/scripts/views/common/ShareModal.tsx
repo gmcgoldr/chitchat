@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 
-export function ShareModal() {
+export function ShareModal({ did }) {
   const [isCopied, setIsCopied]: [boolean, any] = useState(false);
 
-  const link = "follow";
+  const link = did ? `${window.location.origin}/?follow=${did.did}` : "";
   function setClipboardToLink() {
     setIsCopied(true);
     navigator.clipboard.writeText(link);
@@ -58,7 +58,11 @@ export function ShareModal() {
                 </a>
               </p>
               <p className="d-flex align-items-center">
-                <a href="#" className="me-3" onClick={setClipboardToLink}>
+                <a
+                  href="#"
+                  className="me-3 overflow-hidden"
+                  onClick={setClipboardToLink}
+                >
                   <i
                     style={{ fontSize: "1.5em" }}
                     className="bi bi-clipboard-check"

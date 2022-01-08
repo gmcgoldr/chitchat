@@ -3,7 +3,7 @@ import { AccountModal } from "./AccountModal";
 
 const logo = require("../../../svg/logo-solid-color.svg") as string;
 
-export function Header({ name, loggedIn, logout, selectAccount, store }) {
+export function Header({ name, loggedIn, logout, selectAccount, store, did }) {
   return (
     <header className="mb-3 border-bottom">
       <div className="container mw-lg">
@@ -19,7 +19,7 @@ export function Header({ name, loggedIn, logout, selectAccount, store }) {
             </div>
           </a>
           <div className="ms-auto">
-            <ShareModal />
+            <ShareModal did={did} />
           </div>
           <div className="ms-2">
             <AccountModal

@@ -3,8 +3,10 @@ import * as codecRaw from "multiformats/codecs/raw";
 import { sha256 } from "multiformats/hashes/sha2";
 import { base58btc } from "multiformats/bases/base58";
 import PeerId from "peer-id";
-import { peerIdToDidKey } from "./didutils";
+import { DidKey } from "./didutils";
 import jsonld from "jsonld";
+
+import { noRemoteContext } from "./utils";
 
 /*
  * Protocols:
@@ -14,6 +16,7 @@ import jsonld from "jsonld";
  */
 
 async function buildId(doc: object) {
+  // @ts-ignore
   const canonized = await jsonld.canonize(doc);
   const bytes = new TextEncoder().encode(canonized);
   const hash = await sha256.digest(bytes);
@@ -23,8 +26,9 @@ async function buildId(doc: object) {
 
 async function buildProof(doc: object, peerId: PeerId, date?: string) {
   date = date ? date : new Date().toISOString();
-  const issuerDidKey = peerIdToDidKey(peerId);
+  const issuerDid = DidKey.fromPeerId(peerId);
 
+  // @ts-ignore
   const canonized = await jsonld.canonize(doc);
   const bytes = new TextEncoder().encode(canonized);
   const hash = await sha256.digest(bytes);
@@ -65,7 +69,7 @@ async function buildProof(doc: object, peerId: PeerId, date?: string) {
             "@type": ["https://w3id.org/security#Ed25519Signature2020"],
             "https://w3id.org/security#verificationMethod": [
               {
-                "@id": `did:key:${issuerDidKey}#${issuerDidKey}`,
+                "@id": `${issuerDid.did}#${issuerDid.multiKey}`,
               },
             ],
           },
@@ -75,36 +79,20 @@ async function buildProof(doc: object, peerId: PeerId, date?: string) {
   };
 }
 
-function keyInData(key: string, data: object): boolean {
-  let objects: object[] = [data];
-
-  while (objects.length > 0) {
-    const obj = objects.pop();
-    for (const [k, v] of Object.entries(obj)) {
-      if (k === key) return true;
-      if (v instanceof Object) {
-        objects.push(v);
-      }
-    }
-  }
-
-  return false;
-}
-
 export async function buildVerifiableCredential(
   peerId: PeerId,
   key: string,
   data: object,
-  subjectDidKey?: string,
+  subjectDid?: DidKey,
   date?: string
 ) {
-  if (keyInData("@context", data)) {
-    throw "data must be expanded";
+  if (!noRemoteContext(data)) {
+    throw "context must be expanded";
   }
 
   date = date ? date : new Date().toISOString();
-  const issuerDidKey = peerIdToDidKey(peerId);
-  subjectDidKey = subjectDidKey ? subjectDidKey : issuerDidKey;
+  const issuerDid = DidKey.fromPeerId(peerId);
+  subjectDid = subjectDid ? subjectDid : issuerDid;
 
   // let doc = {
   //   "@context": ["https://www.w3.org/2018/credentials/v1"],
@@ -121,7 +109,7 @@ export async function buildVerifiableCredential(
     "@type": ["https://www.w3.org/2018/credentials#VerifiableCredential"],
     "https://www.w3.org/2018/credentials#issuer": [
       {
-        "@id": `did:key:${issuerDidKey}`,
+        "@id": issuerDid.did,
       },
     ],
     "https://www.w3.org/2018/credentials#issuanceDate": [
@@ -132,7 +120,7 @@ export async function buildVerifiableCredential(
     ],
     "https://www.w3.org/2018/credentials#credentialSubject": [
       {
-        "@id": `did:key:${subjectDidKey}`,
+        "@id": subjectDid.did,
       },
     ],
   };

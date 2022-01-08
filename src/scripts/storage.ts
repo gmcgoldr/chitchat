@@ -1,12 +1,15 @@
 import { IDBPDatabase, openDB } from "idb";
 import PeerId from "peer-id";
-import { didToPeerId } from "./didutils";
+import { DidKey } from "./didutils";
 
 const stores = {
   ownedPeerIds: "ownedPeerIds",
   credentials: "credentials",
   state: "state",
   peerIdCredentialInfo: "peerIdCredentialInfo",
+  followers: "followers",
+  following: "following",
+  activities: "activities",
 };
 
 export class Storage {
@@ -34,6 +37,24 @@ export class Storage {
         if (!db.objectStoreNames.contains(stores.peerIdCredentialInfo)) {
           db.createObjectStore(stores.peerIdCredentialInfo, {
             keyPath: "peerId",
+          });
+        }
+
+        if (!db.objectStoreNames.contains(stores.followers)) {
+          db.createObjectStore(stores.followers, {
+            keyPath: "actor",
+          });
+        }
+
+        if (!db.objectStoreNames.contains(stores.following)) {
+          db.createObjectStore(stores.following, {
+            keyPath: "object",
+          });
+        }
+
+        if (!db.objectStoreNames.contains(stores.activities)) {
+          db.createObjectStore(stores.activities, {
+            keyPath: "id",
           });
         }
       },
@@ -74,6 +95,9 @@ export class Storage {
     return this.db.getAllKeys(stores.ownedPeerIds);
   }
 
+  // TODO: validate credentials before storing?
+  // TODO: drop credential rebuilds peer id info
+
   async addCredential(credential: object) {
     const subject =
       credential["https://www.w3.org/2018/credentials#credentialSubject"][0];
@@ -88,7 +112,9 @@ export class Storage {
       data: credential,
     });
 
-    const peerId = (await didToPeerId(subjectId)).toB58String();
+    const peerId = (
+      await DidKey.fromDid(subjectId).buildPeerId()
+    ).toB58String();
     let info = await this.db.get(stores.peerIdCredentialInfo, peerId);
     if (!info) info = { peerId: peerId };
 
@@ -104,5 +130,17 @@ export class Storage {
     return this.db.get(stores.peerIdCredentialInfo, peerIdKey);
   }
 
-  // TODO: drop credential rebuilds peer id info
+  async addFollower(did: DidKey) {
+    console.log("add follower to storage");
+    this.db.put(stores.followers, {
+      actor: did.did,
+    });
+  }
+
+  async addFollowing(did: DidKey) {
+    console.log("add following to storage");
+    this.db.put(stores.following, {
+      object: did.did,
+    });
+  }
 }

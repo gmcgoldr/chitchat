@@ -10,51 +10,61 @@ import { equals } from "uint8arrays/equals";
  * https://github.com/multiformats/multicodec
  */
 
-const prefixEd25519 = Uint8Array.from(Buffer.from("ed", "hex"));
-const prefixRsa = Uint8Array.from(Buffer.from("1205", "hex"));
+export class DidKey {
+  readonly did: string;
+  constructor(readonly multiKey: string) {
+    if (!multiKey.startsWith("z")) {
+      throw Error("invalid multikey");
+    }
+    this.did = `did:key:${multiKey}`;
+  }
 
-export function peerIdToDidKey(peerId: PeerId): string {
-  let prefix: Uint8Array;
-  if (peerId.pubKey instanceof Ed25519PublicKey) {
-    prefix = Uint8Array.from([0xed, 0x01]);
-  } else {
-    throw "unhandled Peer ID key type";
+  static fromPeerId(peerId: PeerId): DidKey {
+    let prefix: Uint8Array;
+    if (peerId.pubKey instanceof Ed25519PublicKey) {
+      prefix = Uint8Array.from([0xed, 0x01]);
+    } else {
+      throw new Error("unhandled Peer ID key type");
+    }
+    // @ts-ignore
+    const bytes = new Uint8Array([...prefix, ...peerId.pubKey._key]);
+    const multiKey = base58btc.encode(bytes);
+    return new DidKey(multiKey);
   }
-  const bytes = new Uint8Array([...prefix, ...peerId.pubKey._key]);
-  return base58btc.encode(bytes);
-}
 
-export async function didToPeerId(did: string) {
-  if (!did.startsWith("did:key:")) {
-    throw "invalid did key";
+  static fromDid(did: string): DidKey {
+    if (!did.startsWith("did:key:")) {
+      throw new Error("invalid did key");
+    }
+    const multiKey = did.substring(8);
+    return new DidKey(multiKey);
   }
-  const didKey = did.substring(8);
-  if (!didKey.startsWith("z")) {
-    throw "invalid encoding";
-  }
-  const multi = base58btc.decode(didKey);
-  if (!equals(multi.slice(0, 2), Uint8Array.from([0xed, 0x01]))) {
-    throw "invalid key codec";
-  }
-  const key = new Ed25519PublicKey(multi.slice(2));
-  return PeerId.createFromPubKey(key.bytes);
-}
 
-export function didKeyToDocument(didKey: string): object {
-  return {
-    "@context": ["https://w3id.org/did/v1"],
-    id: `did:key:${didKey}`,
-    verificationMethod: [
-      {
-        id: `#${didKey}`,
-        type: "Ed25519VerificationKey2020",
-        controller: `did:key:${didKey}`,
-        publicKeyMultiBase: didKey,
-      },
-    ],
-    authentication: [`#${didKey}`],
-    assertionMethod: [`#${didKey}`],
-    capabilityDelegation: [`#${didKey}`],
-    capabilityInvocation: [`#${didKey}`],
-  };
+  async buildPeerId(): Promise<PeerId> {
+    const keyBytes = base58btc.decode(this.multiKey);
+    if (!equals(keyBytes.slice(0, 2), Uint8Array.from([0xed, 0x01]))) {
+      throw new Error("invalid key codec");
+    }
+    const key = new Ed25519PublicKey(keyBytes.slice(2));
+    return PeerId.createFromPubKey(key.bytes);
+  }
+
+  buildDocument(): object {
+    return {
+      "@context": ["https://w3id.org/did/v1"],
+      id: this.did,
+      verificationMethod: [
+        {
+          id: `#${this.multiKey}`,
+          type: "Ed25519VerificationKey2020",
+          controller: this.did,
+          publicKeyMultiBase: this.multiKey,
+        },
+      ],
+      authentication: [`#${this.multiKey}`],
+      assertionMethod: [`#${this.multiKey}`],
+      capabilityDelegation: [`#${this.multiKey}`],
+      capabilityInvocation: [`#${this.multiKey}`],
+    };
+  }
 }

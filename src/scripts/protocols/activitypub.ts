@@ -5,14 +5,15 @@ import lp from "it-length-prefixed";
 
 import Libp2p from "libp2p";
 import PeerId from "peer-id";
-import { didToPeerId, peerIdToDidKey } from "../didutils";
+import { DidKey } from "../didutils";
+import { noRemoteContext } from "../utils";
 
 /*
  * Protocols:
  * https://www.w3.org/TR/activitypub
  */
 
-class ActivityPub {
+export class ActivityPub {
   static readonly protocol = "/chitchat/activitypub/0.1.0";
   static readonly verbs = {
     get: "GET",
@@ -22,12 +23,14 @@ class ActivityPub {
   // TODO: handles return ret code? send back?
 
   libp2p: Libp2p;
-  handleFollow: (data: object) => void;
+  handleActivity: (data: object) => void;
 
-  constructor(libp2p: Libp2p, handeFollow: (data: object) => void) {
+  constructor(libp2p: Libp2p, handleActivity: (data: object) => void) {
     this.libp2p = libp2p;
-    this.handleFollow = handeFollow;
+    this.handleActivity = handleActivity;
+  }
 
+  setHandler() {
     this.libp2p.handle(ActivityPub.protocol, async ({ stream }) => {
       const [result] = await pipe(
         [],
@@ -44,7 +47,15 @@ class ActivityPub {
     });
   }
 
+  unsetHandler() {
+    this.libp2p.unhandle(ActivityPub.protocol);
+  }
+
   handleRoutes(route: string, verb: string, data: object) {
+    if (data["@context"] != "https://www.w3.org/ns/activitystream") {
+      throw "data must have the activitystreams context";
+    }
+
     switch (route) {
       case "inbox":
         this.handleInbox(verb, data);
@@ -72,18 +83,8 @@ class ActivityPub {
     }
   }
 
-  handleActivity(data: object) {
-    const activity = data["type"];
-    switch (activity) {
-      case "Follow":
-        this.handleFollow(data);
-        break;
-      default:
-        throw `unhanded activity: ${activity}`;
-    }
-  }
-
   async send(peer: PeerId, route: string, verb: string, data: object) {
+    console.log("sending", peer, data);
     const connection = await this.libp2p.dial(peer);
     const { stream } = await connection.newStream(ActivityPub.protocol);
     const message = new TextEncoder().encode(
@@ -92,16 +93,17 @@ class ActivityPub {
     await pipe([message], lp.encode(), stream, consume);
   }
 
-  async sendFollow(did: string) {
-    const didKey = peerIdToDidKey(this.libp2p.peerId);
-    const actorDid = `did:key:${didKey}`;
+  async sendFollow(did: DidKey) {
+    console.log("sending follow to", did);
+    if (!did) return;
+    const actorDid = DidKey.fromPeerId(this.libp2p.peerId);
     const data = {
       "@context": "https://www.w3.org/ns/activitystreams",
       type: "Follow",
-      actor: actorDid,
-      object: did,
+      actor: actorDid.did,
+      object: did.did,
     };
-    const peerId = await didToPeerId(did);
+    const peerId = await did.buildPeerId();
     this.send(peerId, "inbox", ActivityPub.verbs.post, data);
   }
 }
