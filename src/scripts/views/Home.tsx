@@ -1,110 +1,260 @@
-import React, { useState, useEffect } from "react";
-import { Header } from "./common/Header";
-import { CreateAccount } from "./common/CreateAccount";
-
-import { buildNode, buildPeerId } from "../p2p";
-import { Storage } from "../storage";
 import Libp2p from "libp2p";
+import { InMessage } from "libp2p-interfaces/src/pubsub";
+import { includes, map } from "lodash";
+import { get } from "lodash";
 import PeerId from "peer-id";
-import { buildVerifiableCredential } from "../credentialutils";
+import { useEffect, useState } from "react";
 
-import { ActivityPub } from "../protocols/activitypub";
-import { DidKey } from "../didutils";
+import { DidKey } from "../didkey";
+import { buildNode, buildPeerId } from "../p2p";
+import { Activity, ActivityPub, OnActivity } from "../protocols/activitypub";
+import { buildVerifiableCredential } from "../rdfutils";
+import { Storage } from "../storage";
+import { Activities } from "./common/Activities";
+import { AddFollow } from "./common/AddFollow";
+import { CreateAccount } from "./common/CreateAccount";
+import { CreatePost } from "./common/CreatePost";
+import { Header } from "./common/Header";
 
-export function Home({ addFollow }) {
-  const [store, setStore]: [Storage, any] = useState(new Storage());
-  const [libp2p, setLibp2p]: [Libp2p, any] = useState(undefined);
-  const [protoActivityPub, setProtoActivityPub]: [ActivityPub, any] =
-    useState(undefined);
-  const [peerId, setPeerId]: [PeerId, any] = useState(undefined);
-  const [displayName, setDisplayName]: [string, any] = useState("");
-  const [addedFollow, setAddedFollow]: [string, any] = useState(undefined);
+type SetPeerId = (peerId: PeerId) => void;
 
-  // TODO: cache activities
+/**
+ * Create a new account.
+ *
+ * @param store
+ * @param displayName - the display name for the account
+ * @param setPeerId - function to set the current `PeerID`
+ */
+async function createAccount(
+  displayName: string,
+  store: Storage,
+  setPeerId: SetPeerId
+) {
+  if (!displayName) return;
+  const peerId = await buildPeerId();
+  setPeerId(peerId);
+  await store.addOwnedPeerId(peerId);
+  await store.setStatePeerId(peerId);
+  const displayNameCred = await buildVerifiableCredential(
+    peerId,
+    "https://schema.org/alternateName",
+    [{ "@value": displayName }]
+  );
+  store.addCredential(displayNameCred);
+}
 
-  function handleFollow(follow: object) {
-    if (!peerId) return;
-    const did = DidKey.fromPeerId(peerId);
-    if (follow["object"] != did.did) return;
-    store.addFollower(follow["actor"]);
-  }
+/**
+ * Log out of the currently active account.
+ *
+ * @param store
+ * @param setPeerId - function to set the current `PeerID`
+ */
+async function logOut(store: Storage, setPeerId: SetPeerId) {
+  setPeerId(undefined);
+  await store.setStatePeerId(undefined);
+}
 
-  function handleActivity(activity: object) {
-    switch (activity["type"]) {
-      case "Follow": {
-        handleFollow(activity);
-        break;
-      }
-      default:
-        throw `unhandled activity type: ${activity["type"]}`;
-    }
-  }
+/**
+ * Log into an account with given `PeerId`.
+ *
+ * @param store
+ * @param setPeerId - function to set the current `PeerID`
+ */
+async function selectAccount(
+  key: string,
+  store: Storage,
+  setPeerId: SetPeerId
+) {
+  const peerId = await store.getOwnedPeerId(key);
+  setPeerId(peerId);
+}
 
-  async function createAccount() {
-    const peerId = await buildPeerId();
-    setPeerId(peerId);
-    await store.addOwnedPeerId(peerId);
-    await store.setStatePeerId(peerId);
-    const displayNameCred = await buildVerifiableCredential(
-      peerId,
-      "https://schema.org/alternateName",
-      [{ "@value": displayName }]
+/**
+ * Add an `Activity` to the UI.
+ *
+ * @param activity - the activity to handle
+ */
+function addActivityUi(
+  activity: Activity,
+  activities: Activity[],
+  setActivities: (x: Activity[]) => void
+) {
+  if (
+    includes(
+      map(activities, (a) => a["@id"]),
+      activity["@id"]
+    )
+  )
+    return;
+  setActivities([...activities, activity]);
+}
+
+/**
+ * Add an `Activity` to the storage.
+ *
+ * @param activity - the activity to handle
+ */
+function addActivityStorage(activity: Activity) {}
+
+/**
+ * Post a message to the network.
+ *
+ * @param message - the message to post
+ */
+async function postMessage(message: string, libp2p: Libp2p, peerId: PeerId) {
+  const activity = await ActivityPub.createNote(message, peerId);
+  const interest = get(activity, [
+    "https://www.w3.org/ns/activitystreams#actor",
+    0,
+    "@id",
+  ]);
+  if (!interest) return;
+  await libp2p.pubsub.publish(
+    interest,
+    new TextEncoder().encode(JSON.stringify(activity))
+  );
+}
+
+/**
+ * Add a DID to the following list.
+ *
+ * @param did - the DID to follow
+ * @param store
+ * @param libp2p
+ * @param peerId - the peerId following the DID
+ * @param onActivity - send DID pubsub messages to this callback
+ */
+async function followDid(
+  did: string,
+  store: Storage,
+  libp2p: Libp2p,
+  peerId: PeerId,
+  onActivity: OnActivity
+) {
+  libp2p.pubsub.subscribe(did);
+  // @ts-ignore
+  if (!includes(libp2p.pubsub.eventNames(), did)) {
+    libp2p.pubsub.on(did, (message: InMessage) =>
+      // TODO: move to deserialiation, verify id, if from sender dont verify sig
+      onActivity(JSON.parse(new TextDecoder().decode(message.data)))
     );
-    store.addCredential(displayNameCred);
   }
+  store.addFollowing({ actor: DidKey.fromPeerId(peerId).did, object: did });
+}
 
-  async function logOut() {
-    setPeerId(undefined);
-    await store.setStatePeerId(undefined);
-  }
+export interface LoggedInProps {
+  location: URL;
+  activities: Activity[];
+  postMessage: (x: string) => void;
+  followDid: (x: string) => void;
+}
 
-  async function selectAccount(key: string) {
-    const peerId = await store.getOwnedPeerId(key);
-    setPeerId(peerId);
-  }
+function LoggedIn({
+  location,
+  activities,
+  followDid,
+  postMessage,
+}: LoggedInProps) {
+  return (
+    <section>
+      <AddFollow location={location} follow={(did: string) => followDid(did)} />
+      <CreatePost post={(message: string) => postMessage(message)} />
+      <Activities activities={activities} />
+    </section>
+  );
+}
 
+export interface LoggedOutProps {
+  displayName: string;
+  setDisplayName: (x: string) => void;
+  createAccount: () => void;
+}
+
+function LoggedOut({
+  displayName,
+  setDisplayName,
+  createAccount,
+}: LoggedOutProps) {
+  return (
+    <CreateAccount
+      displayName={displayName}
+      setDisplayName={setDisplayName}
+      createAccount={createAccount}
+    />
+  );
+}
+
+export interface HomeProps {
+  location: URL;
+}
+
+export function Home({ location }: HomeProps) {
+  const [store, setStore]: [Storage, (x: Storage) => void] = useState(null);
+  const [libp2p, setLibp2p]: [Libp2p, (x: Libp2p) => void] = useState(null);
+  const [peerId, setPeerId]: [PeerId, SetPeerId] = useState(null);
+  const [displayName, setDisplayName]: [string, (x: string) => void] =
+    useState("");
+  const [activities, setActivities]: [Activity[], (x: Activity) => void] =
+    useState([]);
+
+  const onActivity = (activity: Activity) => {
+    addActivityStorage(activity);
+    addActivityUi(activity, activities, setActivities);
+  };
+
+  // build the store only once
   useEffect(async () => {
-    await store.init();
-    setPeerId(await store.getStatePeerId());
+    const newStore = new Storage();
+    await newStore.init();
+    setStore(newStore);
   }, []);
 
+  // build the libp2p instance when peerId changes
   useEffect(async () => {
-    if (peerId) {
-      const libp2p = await buildNode(peerId);
-      const protoActivityPub = new ActivityPub(libp2p, handleActivity);
-      protoActivityPub.setHandler();
-      await store.setStatePeerId(peerId);
-      const info = await store.getPeerIdInfo(peerId.toB58String());
-      setDisplayName(info.displayName ? info.displayName : "");
-      setLibp2p(libp2p);
-      setProtoActivityPub(protoActivityPub);
-    }
+    if (!peerId) return;
+    const newLibp2p = await buildNode(peerId, onActivity);
+    setLibp2p(newLibp2p);
   }, [peerId]);
 
-  useEffect(() => {
-    if (protoActivityPub && peerId && addedFollow != addFollow) {
-      const followDid = DidKey.fromDid(addFollow);
-      protoActivityPub.sendFollow(followDid);
-      store.addFollowing(followDid);
-      setAddedFollow(addFollow);
+  // update info when peerId changes (and store and libp2p are ready)
+  useEffect(async () => {
+    if (!store || !peerId || !libp2p) return;
+    await store.setStatePeerId(peerId);
+    const did = DidKey.fromPeerId(peerId);
+    for (const following of await store.getFollowing(did.did)) {
+      await followDid(following["object"], store, libp2p, peerId, onActivity);
     }
-  }, [addFollow, protoActivityPub, peerId]);
+    const info = await store.getPeerIdInfo(peerId.toB58String());
+    setDisplayName(info && info.displayName ? info.displayName : "");
+  }, [store, peerId, libp2p]);
 
   return (
     <div>
       <Header
-        name={displayName}
-        loggedIn={!!peerId}
-        logout={logOut}
-        selectAccount={selectAccount}
+        displayName={displayName}
+        peerId={peerId}
+        did={peerId ? DidKey.fromPeerId(peerId) : null}
         store={store}
-        did={peerId ? DidKey.fromPeerId(peerId) : undefined}
+        loggedIn={!!store && !!peerId && !!libp2p}
+        logout={() => logOut(store, setPeerId)}
+        selectAccount={(key: string) => selectAccount(key, store, setPeerId)}
       />
-      {peerId ? null : (
-        <CreateAccount
+      {peerId ? (
+        <LoggedIn
+          location={location}
+          activities={activities}
+          followDid={(did: string) =>
+            followDid(did, store, libp2p, peerId, onActivity)
+          }
+          postMessage={(message: string) =>
+            postMessage(message, libp2p, peerId)
+          }
+        />
+      ) : (
+        <LoggedOut
           displayName={displayName}
           setDisplayName={setDisplayName}
-          createAccount={createAccount}
+          createAccount={() => createAccount(displayName, store, setPeerId)}
         />
       )}
     </div>

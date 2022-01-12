@@ -1,7 +1,7 @@
 import { Ed25519PublicKey } from "libp2p-crypto/src/keys/ed25519-class";
-import PeerId from "peer-id";
+import { isEqual, slice } from "lodash";
 import { base58btc } from "multiformats/bases/base58";
-import { equals } from "uint8arrays/equals";
+import PeerId from "peer-id";
 
 /*
  * Protocols:
@@ -42,7 +42,7 @@ export class DidKey {
 
   async buildPeerId(): Promise<PeerId> {
     const keyBytes = base58btc.decode(this.multiKey);
-    if (!equals(keyBytes.slice(0, 2), Uint8Array.from([0xed, 0x01]))) {
+    if (!isEqual(slice(keyBytes, 0, 2), [0xed, 0x01])) {
       throw new Error("invalid key codec");
     }
     const key = new Ed25519PublicKey(keyBytes.slice(2));

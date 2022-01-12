@@ -1,9 +1,31 @@
-import { ShareModal } from "./ShareModal";
+import { PeerId } from "libp2p-interfaces/src/pubsub";
+
+import { DidKey } from "../../didkey";
+import { Storage } from "../../storage";
 import { AccountModal } from "./AccountModal";
+import { ShareModal } from "./ShareModal";
 
 const logo = require("../../../svg/logo-solid-color.svg") as string;
 
-export function Header({ name, loggedIn, logout, selectAccount, store, did }) {
+export interface HeaderProps {
+  displayName: string;
+  peerId: PeerId;
+  did: DidKey;
+  loggedIn: boolean;
+  store: Storage;
+  logout: () => void;
+  selectAccount: (x: string) => void;
+}
+
+export function Header({
+  displayName,
+  peerId,
+  did,
+  loggedIn,
+  store,
+  logout,
+  selectAccount,
+}: HeaderProps) {
   return (
     <header className="mb-3 border-bottom">
       <div className="container mw-lg">
@@ -23,11 +45,13 @@ export function Header({ name, loggedIn, logout, selectAccount, store, did }) {
           </div>
           <div className="ms-2">
             <AccountModal
-              name={name}
+              displayName={displayName}
+              peerId={peerId}
+              did={did}
               loggedIn={loggedIn}
+              store={store}
               logout={logout}
               selectAccount={selectAccount}
-              store={store}
             />
           </div>
         </nav>

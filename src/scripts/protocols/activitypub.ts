@@ -1,17 +1,20 @@
-import { pipe } from "it-pipe";
 import { toBuffer } from "it-buffer";
-import { collect, consume, take } from "streaming-iterables";
 import lp from "it-length-prefixed";
-
+import { pipe } from "it-pipe";
 import Libp2p from "libp2p";
 import PeerId from "peer-id";
-import { DidKey } from "../didutils";
-import { noRemoteContext } from "../utils";
+import { collect, consume, take } from "streaming-iterables";
+
+import { DidKey } from "../didkey";
+import { buildId } from "../rdfutils";
 
 /*
  * Protocols:
  * https://www.w3.org/TR/activitypub
  */
+
+export type Activity = Object;
+export type OnActivity = (x: Activity) => void | Promise<void>;
 
 export class ActivityPub {
   static readonly protocol = "/chitchat/activitypub/0.1.0";
@@ -20,14 +23,12 @@ export class ActivityPub {
     post: "POST",
   };
 
-  // TODO: handles return ret code? send back?
-
   libp2p: Libp2p;
-  handleActivity: (data: object) => void;
+  onActivity: OnActivity;
 
-  constructor(libp2p: Libp2p, handleActivity: (data: object) => void) {
+  constructor(libp2p: Libp2p, onActivity: OnActivity) {
     this.libp2p = libp2p;
-    this.handleActivity = handleActivity;
+    this.onActivity = onActivity;
   }
 
   setHandler() {
@@ -53,7 +54,7 @@ export class ActivityPub {
 
   handleRoutes(route: string, verb: string, data: object) {
     if (data["@context"] != "https://www.w3.org/ns/activitystream") {
-      throw "data must have the activitystreams context";
+      throw Error("data must have the activitystreams context");
     }
 
     switch (route) {
@@ -67,7 +68,7 @@ export class ActivityPub {
       case "followers":
         break;
       default:
-        throw `unhandled route: ${route}`;
+        throw Error(`unhandled route: ${route}`);
     }
   }
 
@@ -76,15 +77,14 @@ export class ActivityPub {
       case ActivityPub.verbs.get:
         break;
       case ActivityPub.verbs.post:
-        this.handleActivity(data);
+        this.onActivity(data);
         break;
       default:
-        throw `unhanded verb: ${verb}`;
+        throw Error(`unhanded verb: ${verb}`);
     }
   }
 
   async send(peer: PeerId, route: string, verb: string, data: object) {
-    console.log("sending", peer, data);
     const connection = await this.libp2p.dial(peer);
     const { stream } = await connection.newStream(ActivityPub.protocol);
     const message = new TextEncoder().encode(
@@ -94,7 +94,6 @@ export class ActivityPub {
   }
 
   async sendFollow(did: DidKey) {
-    console.log("sending follow to", did);
     if (!did) return;
     const actorDid = DidKey.fromPeerId(this.libp2p.peerId);
     const data = {
@@ -105,5 +104,50 @@ export class ActivityPub {
     };
     const peerId = await did.buildPeerId();
     this.send(peerId, "inbox", ActivityPub.verbs.post, data);
+  }
+
+  static async createNote(message: string, actor: PeerId, date?: string) {
+    date = date ? date : new Date().toISOString();
+    const did = DidKey.fromPeerId(actor);
+    const interest = did.did;
+    // wrap in activity
+    const note = {
+      "https://www.w3.org/ns/activitystreams#attributedTo": [
+        {
+          "@id": did.did,
+        },
+      ],
+      "https://www.w3.org/ns/activitystreams#content": [
+        {
+          "@value": message,
+        },
+      ],
+      "https://www.w3.org/ns/activitystreams#to": [
+        {
+          "@id": `${did.did}/following`,
+        },
+      ],
+      "@type": ["https://www.w3.org/ns/activitystreams#Note"],
+    };
+    note["@id"] = await buildId(note);
+
+    const activity = {
+      "https://www.w3.org/ns/activitystreams#actor": [
+        {
+          "@id": did.did,
+        },
+      ],
+      "https://www.w3.org/ns/activitystreams#object": [note],
+      "https://www.w3.org/ns/activitystreams#startTime": [
+        {
+          "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "@value": date,
+        },
+      ],
+      "@type": ["https://www.w3.org/ns/activitystreams#Create"],
+    };
+    activity["@id"] = await buildId(activity);
+
+    return activity;
   }
 }

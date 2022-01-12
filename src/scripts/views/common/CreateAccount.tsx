@@ -1,4 +1,14 @@
-export function CreateAccount({ displayName, setDisplayName, createAccount }) {
+export interface CreateAccountProps {
+  displayName: string;
+  setDisplayName: (x: string) => void;
+  createAccount: () => void;
+}
+
+export function CreateAccount({
+  displayName,
+  setDisplayName,
+  createAccount,
+}: CreateAccountProps) {
   return (
     <section>
       <div className="container mw-md">

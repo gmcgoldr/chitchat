@@ -3,7 +3,10 @@ import React, { useState } from "react";
 export function ShareModal({ did }) {
   const [isCopied, setIsCopied]: [boolean, any] = useState(false);
 
-  const link = did ? `${window.location.origin}/?follow=${did.did}` : "";
+  const location = new URL(window.location.href);
+  const link = did
+    ? `${location.origin}${location.pathname}/?follow=${did.did}`
+    : "";
   function setClipboardToLink() {
     setIsCopied(true);
     navigator.clipboard.writeText(link);
@@ -48,29 +51,28 @@ export function ShareModal({ did }) {
                 <a href="#">
                   <i className="bi bi-facebook"></i>
                 </a>
-                &nbsp;
+                &ensp;
                 <a href="#">
                   <i className="bi bi-twitter"></i>
                 </a>
-                &nbsp;
+                &ensp;
                 <a href="#">
                   <i className="bi bi-instagram"></i>
                 </a>
               </p>
-              <p className="d-flex align-items-center">
+              <p>
                 <a
                   href="#"
-                  className="me-3 overflow-hidden"
+                  className="me-3 text-decoration-none d-flex align-items-center"
                   onClick={setClipboardToLink}
                 >
                   <i
                     style={{ fontSize: "1.5em" }}
                     className="bi bi-clipboard-check"
                   ></i>
+                  &nbsp;
+                  <span>{isCopied ? "Link copied" : "Copy follow link"}</span>
                 </a>
-                <span className="font-monospace me-3">
-                  {isCopied ? "Link copied!" : link}
-                </span>
               </p>
             </div>
           </div>

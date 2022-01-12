@@ -1,12 +1,12 @@
+import jsonld from "jsonld";
+import { base58btc } from "multiformats/bases/base58";
 import { CID } from "multiformats/cid";
 import * as codecRaw from "multiformats/codecs/raw";
 import { sha256 } from "multiformats/hashes/sha2";
-import { base58btc } from "multiformats/bases/base58";
 import PeerId from "peer-id";
-import { DidKey } from "./didutils";
-import jsonld from "jsonld";
 
-import { noRemoteContext } from "./utils";
+import { DidKey } from "./didkey";
+import { noJsonLdContext } from "./utils";
 
 /*
  * Protocols:
@@ -15,7 +15,10 @@ import { noRemoteContext } from "./utils";
  * https://www.w3.org/2018/credentials#credentialSubject
  */
 
-async function buildId(doc: object) {
+export async function buildId(doc: object) {
+  if (!noJsonLdContext(doc)) {
+    throw Error("context must be expanded");
+  }
   // @ts-ignore
   const canonized = await jsonld.canonize(doc);
   const bytes = new TextEncoder().encode(canonized);
@@ -24,7 +27,11 @@ async function buildId(doc: object) {
   return `urn:cid:${cid.toString()}`;
 }
 
-async function buildProof(doc: object, peerId: PeerId, date?: string) {
+export async function buildProof(doc: object, peerId: PeerId, date?: string) {
+  if (!noJsonLdContext(doc)) {
+    throw Error("context must be expanded");
+  }
+
   date = date ? date : new Date().toISOString();
   const issuerDid = DidKey.fromPeerId(peerId);
 
@@ -86,10 +93,6 @@ export async function buildVerifiableCredential(
   subjectDid?: DidKey,
   date?: string
 ) {
-  if (!noRemoteContext(data)) {
-    throw "context must be expanded";
-  }
-
   date = date ? date : new Date().toISOString();
   const issuerDid = DidKey.fromPeerId(peerId);
   subjectDid = subjectDid ? subjectDid : issuerDid;
