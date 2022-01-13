@@ -1,4 +1,5 @@
 import { PeerId } from "libp2p-interfaces/src/pubsub";
+import { Collapse, Fade } from "react-bootstrap";
 
 import { DidKey } from "../../didkey";
 import { Storage } from "../../storage";
@@ -40,9 +41,11 @@ export function Header({
               </span>
             </div>
           </a>
-          <div className="ms-auto">
-            <ShareModal did={did} />
-          </div>
+          <Fade in={loggedIn}>
+            <div className="ms-auto">
+              <ShareModal did={did} />
+            </div>
+          </Fade>
           <div className="ms-2">
             <AccountModal
               displayName={displayName}

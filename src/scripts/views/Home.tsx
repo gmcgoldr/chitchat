@@ -16,8 +16,6 @@ import { CreateAccount } from "./common/CreateAccount";
 import { CreatePost } from "./common/CreatePost";
 import { Header } from "./common/Header";
 
-type SetPeerId = (peerId: PeerId) => void;
-
 /**
  * Create a new account.
  *
@@ -28,7 +26,7 @@ type SetPeerId = (peerId: PeerId) => void;
 async function createAccount(
   displayName: string,
   store: Storage,
-  setPeerId: SetPeerId
+  setPeerId: any
 ) {
   if (!displayName) return;
   const peerId = await buildPeerId();
@@ -49,7 +47,7 @@ async function createAccount(
  * @param store
  * @param setPeerId - function to set the current `PeerID`
  */
-async function logOut(store: Storage, setPeerId: SetPeerId) {
+async function logOut(store: Storage, setPeerId: any) {
   setPeerId(undefined);
   await store.setStatePeerId(undefined);
 }
@@ -60,11 +58,7 @@ async function logOut(store: Storage, setPeerId: SetPeerId) {
  * @param store
  * @param setPeerId - function to set the current `PeerID`
  */
-async function selectAccount(
-  key: string,
-  store: Storage,
-  setPeerId: SetPeerId
-) {
+async function selectAccount(key: string, store: Storage, setPeerId: any) {
   const peerId = await store.getOwnedPeerId(key);
   setPeerId(peerId);
 }
@@ -77,7 +71,7 @@ async function selectAccount(
 function addActivityUi(
   activity: Activity,
   activities: Activity[],
-  setActivities: (x: Activity[]) => void
+  setActivities: any
 ) {
   if (
     includes(
@@ -86,7 +80,7 @@ function addActivityUi(
     )
   )
     return;
-  setActivities([...activities, activity]);
+  setActivities((prev) => [...prev, activity]);
 }
 
 /**
@@ -189,13 +183,11 @@ export interface HomeProps {
 }
 
 export function Home({ location }: HomeProps) {
-  const [store, setStore]: [Storage, (x: Storage) => void] = useState(null);
-  const [libp2p, setLibp2p]: [Libp2p, (x: Libp2p) => void] = useState(null);
-  const [peerId, setPeerId]: [PeerId, SetPeerId] = useState(null);
-  const [displayName, setDisplayName]: [string, (x: string) => void] =
-    useState("");
-  const [activities, setActivities]: [Activity[], (x: Activity) => void] =
-    useState([]);
+  const [store, setStore]: [Storage, any] = useState(null);
+  const [libp2p, setLibp2p]: [Libp2p, any] = useState(null);
+  const [peerId, setPeerId]: [PeerId, any] = useState(null);
+  const [displayName, setDisplayName]: [string, any] = useState("");
+  const [activities, setActivities]: [Activity[], any] = useState([]);
 
   const onActivity = (activity: Activity) => {
     addActivityStorage(activity);
@@ -203,29 +195,33 @@ export function Home({ location }: HomeProps) {
   };
 
   // build the store only once
-  useEffect(async () => {
+  useEffect(() => {
     const newStore = new Storage();
-    await newStore.init();
+    (async () => await newStore.init())();
     setStore(newStore);
   }, []);
 
   // build the libp2p instance when peerId changes
-  useEffect(async () => {
+  useEffect(() => {
     if (!peerId) return;
-    const newLibp2p = await buildNode(peerId, onActivity);
-    setLibp2p(newLibp2p);
+    (async () => {
+      const newLibp2p = await buildNode(peerId, onActivity);
+      setLibp2p(newLibp2p);
+    })();
   }, [peerId]);
 
   // update info when peerId changes (and store and libp2p are ready)
-  useEffect(async () => {
+  useEffect(() => {
     if (!store || !peerId || !libp2p) return;
-    await store.setStatePeerId(peerId);
     const did = DidKey.fromPeerId(peerId);
-    for (const following of await store.getFollowing(did.did)) {
-      await followDid(following["object"], store, libp2p, peerId, onActivity);
-    }
-    const info = await store.getPeerIdInfo(peerId.toB58String());
-    setDisplayName(info && info.displayName ? info.displayName : "");
+    (async () => {
+      await store.setStatePeerId(peerId);
+      for (const following of await store.getFollowing(did.did)) {
+        await followDid(following["object"], store, libp2p, peerId, onActivity);
+      }
+      const info = await store.getPeerIdInfo(peerId.toB58String());
+      setDisplayName(info && info.displayName ? info.displayName : "");
+    })();
   }, [store, peerId, libp2p]);
 
   return (

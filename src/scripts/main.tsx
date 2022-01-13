@@ -1,4 +1,3 @@
-import "bootstrap/js/dist/modal";
 import React from "react";
 import ReactDOM from "react-dom";
 

@@ -1,8 +1,10 @@
 import { PeerId } from "libp2p-interfaces/src/pubsub";
 import { useEffect, useState } from "react";
+import { Modal } from "react-bootstrap";
 
 import { DidKey } from "../../didkey";
 import { Storage } from "../../storage";
+import { CopyLink } from "./CopyLink";
 
 interface AccountSelectorProps {
   store: Storage;
@@ -20,12 +22,14 @@ function AccountSelector({
 
   // TODO: add key suffix to disambiguate
 
-  useEffect(async () => {
+  useEffect(() => {
     if (!store) return;
-    const info = await store.getPeerIdInfo(peerIdKey);
-    setDisplayName(
-      info && info.displayName ? info.displayName : peerIdKey.substring(0, 32)
-    );
+    (async () => {
+      const info = await store.getPeerIdInfo(peerIdKey);
+      setDisplayName(
+        info && info.displayName ? info.displayName : peerIdKey.substring(0, 32)
+      );
+    })();
   }, [peerIdKey, store]);
 
   return (
@@ -50,14 +54,14 @@ function AccountModalOutBody({
   store,
   selectAccount,
 }: AccountModalOutBodyProps) {
-  const [accounts, setAccounts]: [string[], (x: string[]) => void] = useState(
-    []
-  );
+  const [accounts, setAccounts]: [string[], any] = useState([]);
 
-  useEffect(async () => {
+  useEffect(() => {
     if (!store) return;
-    const keys = await store.getOwnedPeerIdKeys();
-    setAccounts(keys);
+    (async () => {
+      const keys = await store.getOwnedPeerIdKeys();
+      setAccounts(keys ? keys : []);
+    })();
   }, [count, store]);
 
   return (
@@ -112,27 +116,13 @@ function AccountModalInBody({
         <div className="row mb-2">
           <div className="col-3 bg-secondary text-white rounded">Peer ID</div>
           <div className="col-9 text-truncate">
-            <a
-              href="#"
-              onClick={() => {
-                navigator.clipboard.writeText(peerId.toB58String());
-              }}
-            >
-              {peerId ? peerId.toB58String() : ""}
-            </a>
+            <CopyLink value={peerId.toB58String()} />
           </div>
         </div>
         <div className="row mb-2">
           <div className="col-3 bg-secondary text-white rounded">DID</div>
           <div className="col-9 text-truncate">
-            <a
-              href="#"
-              onClick={() => {
-                navigator.clipboard.writeText(did.did);
-              }}
-            >
-              {did ? did.did : ""}
-            </a>
+            <CopyLink value={did.did} />
           </div>
         </div>
       </div>
@@ -160,59 +150,53 @@ export function AccountModal({
   selectAccount,
 }: AccountModalProps) {
   // used to update the state every time the modal is open
-  const [count, setCount]: [number, (x: number) => void] = useState(0);
+  const [count, setCount]: [number, any] = useState(0);
+  const [showModal, setShowModal]: [boolean, any] = useState(false);
 
   return (
     <section>
       <button
         type="button"
         className="btn btn-purple-to-red"
-        data-bs-toggle="modal"
-        data-bs-target="#accountModal"
-        data-bs-placement="top"
-        onClick={() => setCount(count + 1)}
+        onClick={() => {
+          setCount((prev) => prev + 1);
+          setShowModal(true);
+        }}
       >
         {loggedIn ? <span>@{displayName}</span> : <span>Log in</span>}
       </button>
-      <div
-        className="modal fade"
-        id="accountModal"
-        tabIndex={-1}
-        aria-labelledby="accountModalLabel"
-        aria-hidden="true"
-      >
-        <div className="modal-dialog">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title" id="accountModalLabel">
-                Account
-              </h5>
-              <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div className="modal-body">
-              {loggedIn ? (
-                <AccountModalInBody
-                  displayName={displayName}
-                  peerId={peerId}
-                  did={did}
-                  logout={logout}
-                />
-              ) : (
-                <AccountModalOutBody
-                  store={store}
-                  count={count}
-                  selectAccount={selectAccount}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <Modal show={showModal}>
+        <Modal.Header>
+          <Modal.Title>Account</Modal.Title>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setShowModal(false)}
+          ></button>
+        </Modal.Header>
+        <Modal.Body>
+          {loggedIn ? (
+            <AccountModalInBody
+              displayName={displayName}
+              peerId={peerId}
+              did={did}
+              logout={() => {
+                logout();
+                setShowModal(false);
+              }}
+            />
+          ) : (
+            <AccountModalOutBody
+              store={store}
+              count={count}
+              selectAccount={(key: string) => {
+                selectAccount(key);
+                setShowModal(false);
+              }}
+            />
+          )}
+        </Modal.Body>
+      </Modal>
     </section>
   );
 }
