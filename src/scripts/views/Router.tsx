@@ -9,10 +9,12 @@ export function Router() {
     setLocation(new URL(window.location.href));
   }, []);
 
-  switch (location ? location.pathname : null) {
-    case "/":
-      return <Home location={location} />;
-    default:
-      return <div>404</div>;
-  }
+  return <Home location={location} />;
+
+  // switch (location ? location.pathname : null) {
+  //   case "/":
+  //     return <Home location={location} />;
+  //   default:
+  //     return <div>404</div>;
+  // }
 }
